@@ -2,7 +2,6 @@
 import { Routes, Route } from 'react-router-dom';
 import HomePage from './pages/Homepage';
 import GetStarted from './pages/GetStarted';
-import './App.css'; // You can remove this line if App.css is empty
 
 function App() {
     return (
