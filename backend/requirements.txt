@@ -1,12 +1,9 @@
-# A highly stable set of versions to resolve dependency conflicts.
-
+# backend/requirements.txt
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
 python-decouple==3.8
 phonenumbers==8.13.37
 requests==2.32.3
-
-# AI & Scientific Computing Stack - STABLE VERSIONS
 numpy==1.26.4
 scipy==1.11.4
 scikit-learn==1.4.2

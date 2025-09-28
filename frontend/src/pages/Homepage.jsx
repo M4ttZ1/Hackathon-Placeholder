@@ -67,17 +67,25 @@ export default function HomePage() {
         setResult(null);
 
         try {
+            console.log("Sending request to backend...");
             const response = await fetch(import.meta.env.VITE_API_URL + '/analyze', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text }),
             });
-            if (!response.ok) throw new Error('Network response was not ok.');
+
+            if (!response.ok) {
+                const errorBody = await response.text();
+                throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. Body: ${errorBody}`);
+            }
+
             const data = await response.json();
+            console.log("Received data from backend:", data);
             setResult(data);
+
         } catch (err) {
-            setError('Failed to analyze. The backend might be down.');
-            console.error(err);
+            console.error("Analysis request failed:", err);
+            setError("Analysis failed. Please check the browser console for details.");
         } finally {
             setIsLoading(false);
         }
@@ -114,8 +122,8 @@ export default function HomePage() {
                     {result && (
                         <div className="mt-8 space-y-8">
                             <ScoreCard score={result.score} label={result.label} />
-                            {result.reasons?.length > 0 && <ReasonBadges reasons={result.reasons} />}
-                            {result.neighbors && result.neighbors.length > 0 && <Neighbors neighbors={result.neighbors} />}
+                            {(result.reasons ?? []).length > 0 && <ReasonBadges reasons={result.reasons} />}
+                            {(result.neighbors ?? []).length > 0 && <Neighbors neighbors={result.neighbors} />}
                         </div>
                     )}
                 </main>
