@@ -1,6 +1,6 @@
 import { useState } from 'react';
 
-// Sub-component for the score card
+// --- Sub-component for the score card (No changes) ---
 const ScoreCard = ({ score, label }) => {
     const getScoreColor = (s) => {
         if (s >= 70) return 'text-red-400';
@@ -23,21 +23,42 @@ const ScoreCard = ({ score, label }) => {
     );
 };
 
-// Sub-component for the reason badges
-const ReasonBadges = ({ reasons }) => (
+// --- UPDATED: This component now displays BOTH reasons and similar examples ---
+const EvidenceSection = ({ reasons, examples }) => (
     <div>
         <h3 className="text-lg font-semibold text-slate-300 mb-3">Evidence Found</h3>
-        <div className="flex flex-wrap gap-2">
+        
+        {/* Heuristic Reasons (as badges) */}
+        <div className="flex flex-wrap gap-2 mb-6">
             {reasons.map((reason, i) => (
                 <span key={i} className="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
-          {reason}
-        </span>
+                    {reason}
+                </span>
             ))}
         </div>
+
+        {/* Similar Examples from Faiss (as cards) */}
+        {examples && examples.length > 0 && (
+            <div>
+                 <h4 className="text-md font-semibold text-slate-400 mb-3">Similar Examples from Dataset:</h4>
+                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    {examples.map((example, i) => (
+                        <div key={i} className="bg-slate-800/50 rounded-lg p-4 ring-1 ring-slate-700">
+                            <p className={`text-sm font-bold ${example.label === 'phishing' ? 'text-red-400' : 'text-green-400'}`}>
+                                {example.label === 'phishing' ? 'Similar Phishing Example' : 'Similar Benign Example'}
+                            </p>
+                            <p className="text-slate-400 mt-2 text-sm italic line-clamp-3">
+                                "{example.text}"
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        )}
     </div>
 );
 
-// Main Page Component
+// --- Main Page Component ---
 export default function HomePage() {
     const [text, setText] = useState('');
     const [result, setResult] = useState(null);
@@ -45,46 +66,29 @@ export default function HomePage() {
     const [error, setError] = useState(null); 
 
     const handleAnalyze = async () => {
-        console.log("1. 'Analyze' button clicked. Starting handleAnalyze function.");
-
-        if (!text.trim()) {
-            console.log("Input text is empty. Aborting.");
-            return;
-        }
-        
+        if (!text.trim()) return;
         setIsLoading(true);
         setResult(null);
         setError(null);
 
-        console.log("2. Preparing to send text to backend:", { text });
-
         try {
             const response = await fetch('http://127.0.0.1:8000/analyze', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: text }),
             });
 
-            console.log("3. Received response from server:", response);
-
             if (!response.ok) {
-                // This will be caught by the .catch() block below
                 throw new Error(`HTTP error! Status: ${response.status}`);
             }
 
             const data = await response.json();
-            console.log("4. Successfully parsed JSON data:", data);
             setResult(data);
 
         } catch (err) {
-            // This block runs if the fetch fails or if we throw an error above
-            console.error("5. An error occurred during the API call:", err);
+            console.error("Failed to fetch:", err);
             setError("Could not connect to the analysis server. Please make sure it's running and try again.");
         } finally {
-            // This block runs regardless of success or failure
-            console.log("6. API call finished. Setting isLoading to false.");
             setIsLoading(false);
         }
     };
@@ -100,9 +104,11 @@ export default function HomePage() {
                 <main>
                     <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
                         <textarea
+                            id="text-input"
+                            name="text-input"
                             value={text}
                             onChange={(e) => setText(e.target.value)}
-                            placeholder="Paste any email or message here."
+                            placeholder="Your package has been held at our warehouse..."
                             className="w-full h-40 p-3 bg-slate-900 rounded-md border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
                         />
                         <div className="mt-4 flex justify-end">
@@ -125,7 +131,11 @@ export default function HomePage() {
                     {result && (
                         <div className="mt-8 space-y-8">
                             <ScoreCard score={result.score} label={result.label} />
-                            <ReasonBadges reasons={result.reasons} />
+                            {/* 👇 Use the new, combined EvidenceSection component 👇 */}
+                            <EvidenceSection 
+                                reasons={result.reasons} 
+                                examples={result.similar_examples} 
+                            />
                         </div>
                     )}
                 </main>
