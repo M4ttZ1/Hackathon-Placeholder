@@ -1,4 +1,3 @@
-// frontend/src/pages/HomePage.jsx
 import { useState } from 'react';
 
 // Sub-component for the score card
@@ -43,30 +42,51 @@ export default function HomePage() {
     const [text, setText] = useState('');
     const [result, setResult] = useState(null);
     const [isLoading, setIsLoading] = useState(false);
+    const [error, setError] = useState(null); 
 
     const handleAnalyze = async () => {
-        if (!text.trim()) return;
+        console.log("1. 'Analyze' button clicked. Starting handleAnalyze function.");
+
+        if (!text.trim()) {
+            console.log("Input text is empty. Aborting.");
+            return;
+        }
+        
         setIsLoading(true);
         setResult(null);
+        setError(null);
 
-        // --- MOCK DATA ---
-        // Instead of a real API call, we define a fake response object here.
-        const mockData = {
-            score: 85,
-            label: "high_risk",
-            reasons: [
-                "Urgency language detected: 'act now'",
-                "Contains a shortened URL",
-                "Requests payment via gift card",
-                "High similarity to known phishing scams"
-            ],
-        };
+        console.log("2. Preparing to send text to backend:", { text });
 
-        // We use a timeout to simulate the delay of a real network request.
-        await new Promise(resolve => setTimeout(resolve, 800));
+        try {
+            const response = await fetch('http://127.0.0.1:8000/analyze', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ text: text }),
+            });
 
-        setResult(mockData);
-        setIsLoading(false);
+            console.log("3. Received response from server:", response);
+
+            if (!response.ok) {
+                // This will be caught by the .catch() block below
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            console.log("4. Successfully parsed JSON data:", data);
+            setResult(data);
+
+        } catch (err) {
+            // This block runs if the fetch fails or if we throw an error above
+            console.error("5. An error occurred during the API call:", err);
+            setError("Could not connect to the analysis server. Please make sure it's running and try again.");
+        } finally {
+            // This block runs regardless of success or failure
+            console.log("6. API call finished. Setting isLoading to false.");
+            setIsLoading(false);
+        }
     };
 
     return (
@@ -79,12 +99,12 @@ export default function HomePage() {
 
                 <main>
                     <div className="bg-slate-800 p-4 rounded-lg shadow-lg">
-            <textarea
-                value={text}
-                onChange={(e) => setText(e.target.value)}
-                placeholder="Your package has been held at our warehouse. Please follow the instructions here: http://bit.ly/xyz to reschedule delivery. Act now to avoid fees."
-                className="w-full h-40 p-3 bg-slate-900 rounded-md border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
-            />
+                        <textarea
+                            value={text}
+                            onChange={(e) => setText(e.target.value)}
+                            placeholder="Paste any email or message here."
+                            className="w-full h-40 p-3 bg-slate-900 rounded-md border border-slate-700 focus:ring-2 focus:ring-blue-500 focus:outline-none resize-none"
+                        />
                         <div className="mt-4 flex justify-end">
                             <button
                                 onClick={handleAnalyze}
@@ -95,6 +115,12 @@ export default function HomePage() {
                             </button>
                         </div>
                     </div>
+                    
+                    {error && (
+                        <div className="mt-8 text-center text-red-400 bg-red-500/10 p-4 rounded-lg">
+                            <p><strong>Error:</strong> {error}</p>
+                        </div>
+                    )}
 
                     {result && (
                         <div className="mt-8 space-y-8">
@@ -107,3 +133,4 @@ export default function HomePage() {
         </div>
     );
 }
+
