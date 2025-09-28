@@ -24,36 +24,45 @@ const ScoreCard = ({ score, label }) => {
 };
 
 // --- UPDATED: This component now displays BOTH reasons and similar examples ---
-const EvidenceSection = ({ reasons, examples }) => (
+const EvidenceSection = ({ reasons, examples, isInsufficientData }) => (
     <div>
         <h3 className="text-lg font-semibold text-slate-300 mb-3">Evidence Found</h3>
         
-        {/* Heuristic Reasons (as badges) */}
-        <div className="flex flex-wrap gap-2 mb-6">
-            {reasons.map((reason, i) => (
-                <span key={i} className="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
-                    {reason}
-                </span>
-            ))}
-        </div>
-
-        {/* Similar Examples from Faiss (as cards) */}
-        {examples && examples.length > 0 && (
-            <div>
-                 <h4 className="text-md font-semibold text-slate-400 mb-3">Similar Examples from Dataset:</h4>
-                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    {examples.map((example, i) => (
-                        <div key={i} className="bg-slate-800/50 rounded-lg p-4 ring-1 ring-slate-700">
-                            <p className={`text-sm font-bold ${example.label === 'phishing' ? 'text-red-400' : 'text-green-400'}`}>
-                                {example.label === 'phishing' ? 'Similar Phishing Example' : 'Similar Benign Example'}
-                            </p>
-                            <p className="text-slate-400 mt-2 text-sm italic line-clamp-3">
-                                "{example.text}"
-                            </p>
-                        </div>
+        {isInsufficientData ? (
+            // Display message for insufficient data
+            <div className="bg-slate-700/50 rounded-lg p-4 text-center">
+                <p className="text-slate-400 text-sm">Not enough data to analyze. Please provide more text or a URL/link.</p>
+            </div>
+        ) : (
+            <>
+                {/* Heuristic Reasons (as badges) */}
+                <div className="flex flex-wrap gap-2 mb-6">
+                    {reasons.map((reason, i) => (
+                        <span key={i} className="bg-slate-700 text-slate-300 px-3 py-1 rounded-full text-sm">
+                            {reason}
+                        </span>
                     ))}
                 </div>
-            </div>
+
+                {/* Similar Examples from Faiss (as cards) */}
+                {examples && examples.length > 0 && (
+                    <div>
+                         <h4 className="text-md font-semibold text-slate-400 mb-3">Similar Examples from Dataset:</h4>
+                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {examples.map((example, i) => (
+                                <div key={i} className="bg-slate-800/50 rounded-lg p-4 ring-1 ring-slate-700">
+                                    <p className={`text-sm font-bold ${example.label === 'phishing' ? 'text-red-400' : 'text-green-400'}`}>
+                                        {example.label === 'phishing' ? 'Similar Phishing Example' : 'Similar Benign Example'}
+                                    </p>
+                                    <p className="text-slate-400 mt-2 text-sm italic line-clamp-3">
+                                        "{example.text}"
+                                    </p>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </>
         )}
     </div>
 );
@@ -65,8 +74,36 @@ export default function HomePage() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState(null); 
 
+    // Helper function to check if text contains a URL/link
+    const containsLink = (text) => {
+        const urlRegex = /(https?:\/\/[^\s]+|www\.[^\s]+|[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?)/i;
+        return urlRegex.test(text);
+    };
+
+    // Helper function to count words
+    const countWords = (text) => {
+        return text.trim().split(/\s+/).filter(word => word.length > 0).length;
+    };
+
     const handleAnalyze = async () => {
         if (!text.trim()) return;
+        
+        const wordCount = countWords(text);
+        const hasLink = containsLink(text);
+        
+        // Check if input is insufficient (less than 5 words and no link)
+        if (wordCount < 5 && !hasLink) {
+            setResult({
+                score: 0,
+                label: 'low_risk',
+                reasons: [],
+                similar_examples: [],
+                insufficient_data: true
+            });
+            setError(null);
+            return;
+        }
+
         setIsLoading(true);
         setResult(null);
         setError(null);
@@ -83,7 +120,7 @@ export default function HomePage() {
             }
 
             const data = await response.json();
-            setResult(data);
+            setResult({ ...data, insufficient_data: false });
 
         } catch (err) {
             console.error("Failed to fetch:", err);
@@ -131,10 +168,10 @@ export default function HomePage() {
                     {result && (
                         <div className="mt-8 space-y-8">
                             <ScoreCard score={result.score} label={result.label} />
-                            {/* 👇 Use the new, combined EvidenceSection component 👇 */}
                             <EvidenceSection 
                                 reasons={result.reasons} 
                                 examples={result.similar_examples} 
+                                isInsufficientData={result.insufficient_data}
                             />
                         </div>
                     )}
@@ -143,4 +180,3 @@ export default function HomePage() {
         </div>
     );
 }
-
