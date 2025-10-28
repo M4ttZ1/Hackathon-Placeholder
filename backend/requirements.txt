@@ -1,5 +1,18 @@
+# A highly stable set of versions to resolve dependency conflicts.
+
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
-scikit-learn==1.5.0
-pandas==2.2.2
-joblib==1.4.2
+python-decouple==3.8
+phonenumbers==8.13.37
+httpx==0.27.0
+
+# AI & Scientific Computing Stack - STABLE VERSIONS
+numpy==1.26.4
+scipy==1.11.4
+scikit-learn==1.4.2
+torch==2.3.1
+sentence-transformers==2.7.0
+faiss-cpu==1.8.0
+thefuzz==0.22.1
+python-Levenshtein==0.25.1
+python-multipart==0.0.9

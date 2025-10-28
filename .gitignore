@@ -4,35 +4,118 @@ node_modules/
 
 # Ignore the Python virtual environment folder
 .venv/
+venv/
+env/
 
 # ## Sensitive Information ##
-# [cite_start]Ignore all environment files containing API keys or secrets [cite: 90]
+# Ignore all environment files containing API keys or secrets
 .env
-*.env.local
+.env.local
+.env.*.local
+.env.production
+.env.development
+.env.test
+# But allow .env.example files (templates without real keys)
+!.env.example
+!**/.env.example
+
+# Ignore docs folder (contains API key examples and sensitive setup info)
+backend/docs/
 
 # ## Python Cache ##
 # Ignore Python's auto-generated cache folders and files
 __pycache__/
 *.pyc
+*.pyo
+*.pyd
+.Python
 
-# ## Data ##
-# Ignore the large raw datasets to keep the repository small
-datasets/
+# Python egg files
+*.egg
+*.egg-info/
+dist-egg/
+.eggs/
+
+# Python build artifacts
+build/
+develop-eggs/
+downloads/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.manifest
+*.spec
+
+# ## Data & Models ##
+# Ignore unused large CSV file (52MB, not used in create_corpus.py)
+backend/Phishing_Email.csv
+
+# Keep the 4 datasets we actually use:
+# - backend/datasets/Enron.csv
+# - backend/datasets/phishing_legit_dataset_KD_10000.csv
+# - backend/datasets/SpamAssasin.csv
+# - backend/datasets/SMSSpamCollection
+
+# Ignore large FAISS index files (can be rebuilt with build_index.py)
+*.faiss
+backend/corpus.faiss
+
+# Ignore large corpus files (can be rebuilt from datasets)
+backend/corpus.json
+backend/corpus_meta.json
+
+# ## Cache Files ##
+# Ignore all cache files (API responses, test caches)
+*_cache.json
+backend/intel_cache.json
+backend/test_faiss_cache.json
+
+# ## Testing ##
+# Ignore pytest cache
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+.hypothesis/
+
+# Ignore Jupyter Notebook checkpoints
+.ipynb_checkpoints/
 
 # ## Build Output ##
 # Ignore the production build folders
-dist
-dist-ssr
+dist/
+dist-ssr/
+*.dist-info/
 
 # ## Log Files ##
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+pip-log.txt
+pip-delete-this-directory.txt
 
 # ## IDE & OS Files ##
 # Ignore IDE-specific settings and OS junk files
 .idea/
 .vscode/
+*.swp
+*.swo
+*~
 .DS_Store
+Thumbs.db
+Desktop.ini
+
+# ## Temporary Files ##
+*.tmp
+*.temp
+*.bak
+*.orig
