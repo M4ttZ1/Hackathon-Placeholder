@@ -1,68 +1,60 @@
-# 🚀 Quick Start - Testing Intel Integration
+# OmniLens Quick Start Guide
 
-## TL;DR - What Changed?
+## What is OmniLens?
 
-✅ **Fixed**: VirusTotal now works (was using wrong URL encoding)  
-✅ **Added**: URLHaus threat intelligence  
-✅ **Improved**: All API calls are now async and parallel  
-✅ **Optimized**: Results are cached (30x faster on repeat URLs)
+OmniLens is a phishing detection system that analyzes text messages and emails for suspicious content. It combines multiple detection methods:
+
+- **Threat Intelligence**: Checks URLs against VirusTotal and URLHaus databases
+- **Semantic Similarity**: Uses AI embeddings (FAISS) to compare messages to known phishing samples
+- **Pattern Detection**: Identifies suspicious keywords, URLs, and obfuscation techniques
+- **Scoring Engine**: Blends all signals into a 0-100 risk score with labels (benign, low_risk, suspicious, high_risk, confirmed_phishing)
 
 ---
 
-## Installation (2 minutes)
+## Installation
 
-### 1. Install httpx
+### 1. Install Dependencies
 
 ```bash
 cd backend
-pip install httpx==0.27.0
+pip install -r requirements.txt
 ```
 
-### 2. Get VirusTotal API Key (Optional but recommended)
+### 2. Set Up API Keys (Optional)
 
-1. Go to https://www.virustotal.com/
-2. Sign up (free)
-3. Get API key from https://www.virustotal.com/gui/my-apikey
-4. Create `backend/.env`:
-   ```bash
-   VIRUSTOTAL_API_KEY=your_key_here
-   ```
+Create `backend/.env`:
 
-**Without API key:** Everything works, VT checks are just skipped gracefully.
+```bash
+VIRUSTOTAL_API_KEY=your_vt_key_here
+URLHAUS_API_KEY=your_urlhaus_key_here
+```
+
+**Note:** Without API keys, the system still works but skips threat intelligence checks. Get keys from:
+- VirusTotal: https://www.virustotal.com/gui/my-apikey
+- URLHaus: https://urlhaus.abuse.ch/api/
 
 ---
 
-## Quick Test (1 minute)
+## Build the Corpus
 
-### Run Test Suite
+Before running the system, you need to build the FAISS index from your dataset:
 
 ```bash
 cd backend
-python test_intel.py
+python create_corpus.py
+python build_index.py
 ```
 
-**Expected output:**
-```
-🧪 INTEL API TEST SUITE
-============================================================
-🧪 Testing URL Encoding...
-  ✅ https://google.com
-  ✅ https://example.com
-  ✅ http://test.com/path?q=1
+This creates:
+- `corpus.json` - Corpus metadata
+- `corpus_meta.json` - Extended metadata with labels
+- `corpus.faiss` - FAISS index for similarity search
 
-🧪 Testing VirusTotal API...
-  ✅ VirusTotal API working!
-
-🧪 Testing URLHaus API...
-  ✅ URLHaus API working!
-
-============================================================
-✅ All tests passed!
-```
+The corpus uses datasets from `backend/datasets/` (Enron, SpamAssassin, phishing datasets).
 
 ---
 
-## Manual Test (2 minutes)
+## Running the Server
 
 ### Start Backend
 
@@ -71,220 +63,168 @@ cd backend
 uvicorn main:app --reload
 ```
 
-### Test Analysis Endpoint
-
-```bash
-# Test with a URL
-curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{
-    "text": "Urgent! Verify your account: https://google.com"
-  }'
-```
-
-**Expected response:**
-```json
-{
-  "score": 40,
-  "label": "suspicious",
-  "reasons": [
-    "Suspicious payment method or urgency keywords mentioned.",
-    "VirusTotal: 0 vendors flagged URL as malicious."
-  ],
-  "neighbors": []
-}
-```
-
-### Check the Cache
-
-```bash
-cat backend/intel_cache.json
-```
-
-You should see cached VT and URLHaus results:
-```json
-{
-  "vt:aHR0cHM6Ly9nb29nbGUuY29t": {
-    "provider": "virustotal",
-    "malicious": 0,
-    "suspicious": 0,
-    "status": "ok"
-  },
-  "urlhaus:https://google.com": {
-    "provider": "urlhaus",
-    "status": "clean"
-  }
-}
-```
-
----
-
-## Test with Frontend (3 minutes)
+Server runs on `http://localhost:8000`
 
 ### Start Frontend
 
 ```bash
 cd frontend
-npm install  # if not already done
+npm install  # First time only
 npm run dev
 ```
 
-### Open Browser
+Frontend runs on `http://localhost:5173`
 
-1. Go to http://localhost:5173
-2. Paste this test text:
-   ```
-   Urgent! Your PayPal account has been suspended.
-   Click here immediately: https://paypal-verify-security.com
-   Wire $500 to verify your identity.
-   ```
-3. Click "Analyze"
-4. Watch for intel reasons in the response!
+### Test the API
+
+```bash
+curl -X POST http://localhost:8000/analyze \
+  -H "Content-Type: application/json" \
+  -d '{"text": "URGENT: Verify your PayPal account at https://example.com"}'
+```
+
+**Response:**
+```json
+{
+  "score": 45,
+  "label": "suspicious",
+  "reasons": [
+    "Urgency keywords detected.",
+    "VirusTotal: 0 vendors flagged URL as malicious."
+  ],
+  "neighbors": [...],
+  "signals": {...}
+}
+```
 
 ---
 
-## Common Issues & Fixes
+## Running Tests
 
-### "ModuleNotFoundError: No module named 'httpx'"
+### Run All Tests
 
 ```bash
-pip install httpx==0.27.0
+cd backend
+python run_all_tests.py
 ```
 
-### "ModuleNotFoundError: No module named 'intel'"
+This runs all test suites in sequence and reports results.
 
-Make sure you're running from the `backend` directory:
+### Individual Tests
+
+#### Quick API Test
+```bash
+python tests/test_quick.py
+```
+Checks if VirusTotal and URLHaus APIs are accessible without loading AI models.
+
+#### Intel Module Test
+```bash
+python tests/test_intel.py
+```
+Tests URL encoding, async API calls, caching, and both VT/URLHaus integration.
+
+#### Multiple URL Handling
+```bash
+python tests/test_multiple_urls.py
+```
+Verifies that messages with multiple URLs are processed correctly.
+
+#### FAISS Dynamic Scorer
+```bash
+python tests/test_faiss_dynamic.py
+```
+Tests the continuous 0-100 FAISS scoring system (no hard thresholds).
+
+#### Complete System Test
+```bash
+python tests/test_complete_system.py
+```
+End-to-end test verifying FAISS, VirusTotal, URLHaus, and scoring engine work together.
+
+#### Full System with Malicious URL
+```bash
+python tests/test_malicious_full_system.py
+```
+Tests the complete pipeline with a known malicious URL to verify detection.
+
+#### Score Inflation Test
+```bash
+python tests/test_score_inflation.py
+```
+Verifies that benign messages don't get artificially high scores.
+
+---
+
+## How It Works
+
+### Analysis Pipeline
+
+1. **Text Input** → Extract URLs and text content
+2. **Threat Intel** → Check URLs against VirusTotal and URLHaus (async, cached)
+3. **FAISS Search** → Find similar messages in corpus using AI embeddings
+4. **Pattern Detection** → Scan for keywords, suspicious URLs, brand impersonation
+5. **Scoring Engine** → Combine all signals into a single risk score
+6. **Confidence Dampening** → Adjust score based on message length and evidence strength
+7. **Label Assignment** → Classify as benign/low_risk/suspicious/high_risk/confirmed_phishing
+
+### Scoring Components
+
+- **Intel**: VirusTotal/URLHaus results (0-75 points)
+- **FAISS**: Semantic similarity to known phishing (0-35 points)
+- **Keywords**: Urgency and payment terms (0-30 points)
+- **Patterns**: Suspicious TLDs, IP addresses, ports (0-45 points)
+- **Brand**: Brand impersonation detection (0-10 points, contextual)
+
+Final score is clamped to 0-100 and adjusted by confidence dampening.
+
+---
+
+## Common Issues
+
+### Module Not Found Errors
+
+Make sure you're in the `backend` directory:
 ```bash
 cd backend
 python -c "from intel import check_virustotal; print('OK')"
 ```
 
-### VT Returns 401 Unauthorized
+### VirusTotal Returns 401
 
-Check your API key:
-1. Verify `.env` exists in `backend/` directory
-2. Check key format: `VIRUSTOTAL_API_KEY=your_key_here` (no quotes)
-3. Verify key at https://www.virustotal.com/gui/my-apikey
-
-### URLHaus Always Returns Error
-
-Check internet connection:
+Check your `.env` file:
 ```bash
-curl -X POST https://urlhaus.abuse.ch/api/v1/url/ \
-  -d "url=https://google.com"
+# backend/.env
+VIRUSTOTAL_API_KEY=your_key_here  # No quotes
 ```
 
-Should return JSON with `query_status`.
+### FAISS Index Not Found
 
----
-
-## Verify Everything Works
-
-Run this checklist:
-
+Build the corpus first:
 ```bash
-# 1. Dependencies installed
-pip show httpx
-
-# 2. Intel module loads
-cd backend
-python -c "from intel import check_virustotal; print('✅ intel.py works')"
-
-# 3. Test suite passes
-python test_intel.py
-
-# 4. Server starts
-uvicorn main:app --reload &
-
-# 5. Endpoint responds
-curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"text": "test"}'
-
-# 6. Cache file created
-ls -la intel_cache.json
+python create_corpus.py
+python build_index.py
 ```
 
-If all steps work, you're good to go! 🎉
+### Cache Issues
 
----
-
-## Performance Check
-
-Run the same analysis twice and time it:
-
+Delete `intel_cache.json` to clear cached API results:
 ```bash
-# First run (hits API)
-time curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"text": "https://google.com"}'
-
-# Second run (hits cache)
-time curl -X POST http://localhost:8000/analyze \
-  -H "Content-Type: application/json" \
-  -d '{"text": "https://google.com"}'
-```
-
-Second run should be **much faster** (~30x).
-
----
-
-## What to Check in Git
-
-New files:
-```bash
-git status
-# Should show:
-# - backend/intel.py (NEW)
-# - backend/INTEL_API_FIX.md (NEW)
-# - backend/AI_OPTIONS.md (NEW)
-# - backend/test_intel.py (NEW)
-# - backend/CHANGES_SUMMARY.md (NEW)
-# - backend/QUICKSTART.md (NEW)
-```
-
-Modified files:
-```bash
-# Should show:
-# - backend/main.py (MODIFIED)
-# - backend/requirements.txt (MODIFIED)
-# - .gitignore (MODIFIED)
-```
-
-Ignored files (should NOT appear in git status):
-```bash
-# These should be ignored:
-# - backend/intel_cache.json
-# - backend/__pycache__/
+rm backend/intel_cache.json
 ```
 
 ---
 
-## Next Steps
+## Documentation
 
-Once everything works:
+All detailed documentation is in `backend/docs/`:
 
-1. ✅ Commit the changes
-2. 🧪 Test with real phishing URLs
-3. 📊 Monitor VT quota usage
-4. 🎨 Add text highlighting to frontend (optional)
-5. 🤖 Add transformer classifier (optional)
-
----
-
-## Need Help?
-
-### Documentation
-- `INTEL_API_FIX.md` - Detailed technical explanation
-- `AI_OPTIONS.md` - AI/ML options for the project
-- `CHANGES_SUMMARY.md` - Complete list of changes
-
-### Contact
-- Check the test suite output for specific errors
-- Review logs when starting uvicorn
-- Check `intel_cache.json` for API responses
+- `ARCHITECTURE_EXPLAINED.md` - System architecture overview
+- `IMPLEMENTATION_SUMMARY.md` - Complete implementation details
+- `FAISS_DYNAMIC_SCORING.md` - FAISS scoring explanation
+- `SETUP_API_KEYS.md` - API key setup guide
+- `BUGFIX_MULTIPLE_URLS.md` - Known issues and fixes
 
 ---
 
-**That's it! The core intel APIs are now fixed and working.** 🎯
-
+**That's it! You're ready to analyze messages for phishing attempts.**
