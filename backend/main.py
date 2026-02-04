@@ -12,6 +12,12 @@ import email
 import email.policy
 from thefuzz import fuzz
 import asyncio
+import warnings
+import os
+
+# Suppress protobuf warnings (harmless compatibility messages)
+os.environ['PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION'] = 'python'
+warnings.filterwarnings('ignore', category=UserWarning, module='google.protobuf')
 
 # Import new intel module
 from intel import check_urls_intel, IntelCache
@@ -80,7 +86,17 @@ async def load_ai_resources():
 
 
 # --- CORS Configuration ---
-origins = ["http://localhost:5173", "http://127.0.0.1:5173"]
+# Allow all localhost ports for development
+origins = [
+    "http://localhost:5173", 
+    "http://127.0.0.1:5173",
+    "http://localhost:5175",
+    "http://127.0.0.1:5175",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174"
+]
 app.add_middleware(CORSMiddleware, allow_origins=origins, allow_credentials=True, allow_methods=["*"],
                    allow_headers=["*"])
 

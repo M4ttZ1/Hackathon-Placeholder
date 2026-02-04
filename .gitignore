@@ -22,6 +22,10 @@ env/
 # Ignore docs folder (contains API key examples and sensitive setup info)
 backend/docs/
 
+# Ignore Documentation folders
+Documentation/
+**/Documentation/
+
 # ## Python Cache ##
 # Ignore Python's auto-generated cache folders and files
 __pycache__/

@@ -1,0 +1,286 @@
+@import './fonts.css';
+@import './tailwind.css';
+@import './theme.css';
+
+/* Base */
+html, body, #root {
+  height: 100%;
+  font-family: 'Inter Tight', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+}
+
+body {
+  margin: 0;
+  color: #e5e7eb;
+  background: #0a0f1e;
+  overflow-x: hidden;
+  position: relative;
+  /* Performance optimizations */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+/* ===== BACKGROUND ANIMATIONS ===== */
+
+/* Atmosphere slow drift - GPU optimized */
+@keyframes atmosphereDrift {
+  0%, 100% { 
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(2%, -2%, 0) scale(1.05);
+  }
+}
+
+/* PERFORMANCE: 4 angles for visual variety */
+@keyframes signalZoom-12 {
+  0%, 100% { transform: translateZ(0) rotate(12deg) scale(0.9); }
+  50% { transform: translateZ(0) rotate(12deg) scale(1.1); }
+}
+
+@keyframes signalZoom-67 {
+  0%, 100% { transform: translateZ(0) rotate(67deg) scale(0.9); }
+  50% { transform: translateZ(0) rotate(67deg) scale(1.1); }
+}
+
+@keyframes signalZoom-28 {
+  0%, 100% { transform: translateZ(0) rotate(28deg) scale(0.9); }
+  50% { transform: translateZ(0) rotate(28deg) scale(1.1); }
+}
+
+@keyframes signalZoom-43 {
+  0%, 100% { transform: translateZ(0) rotate(43deg) scale(0.9); }
+  50% { transform: translateZ(0) rotate(43deg) scale(1.1); }
+}
+
+/* Signal line pulsating brightness - reduced range for performance */
+@keyframes signalPulse {
+  0%, 100% {
+    opacity: 0.7;
+  }
+  50% {
+    opacity: 0.9;
+  }
+}
+
+/* Wisp floating motion - simplified for performance */
+@keyframes wispFloat {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.5;
+  }
+  50% {
+    transform: translate3d(-8px, -20px, 0) scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+/* ===== SCANNER CARD ANIMATIONS ===== */
+
+/* PERFORMANCE: Replaced box-shadow animation with opacity-based glow */
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.7; }
+}
+
+@keyframes borderShimmer {
+  0% {
+    background-position: -200% center;
+  }
+  100% {
+    background-position: 200% center;
+  }
+}
+
+@keyframes innerScan {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 100% 100%;
+  }
+}
+
+/* ===== BUTTON ANIMATIONS ===== */
+
+/* PERFORMANCE: Replaced box-shadow animation with opacity-based glow */
+@keyframes buttonGlowPulse {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.85; }
+}
+
+/* ===== SCANNER CARD STYLES ===== */
+
+.scanner-card {
+  position: relative;
+  z-index: 10;
+  /* Removed box-shadow animation - replaced with pseudo-element glow */
+  background: linear-gradient(135deg, 
+    rgba(255, 255, 255, 0.05) 0%, 
+    rgba(255, 255, 255, 0.02) 100%) !important;
+  /* PERFORMANCE: Balanced backdrop-filter blur (14px for better visual quality) */
+  backdrop-filter: blur(14px) saturate(170%) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(170%) !important;
+  border: 1px solid rgba(120, 200, 255, 0.45) !important;
+  isolation: isolate;
+  transform: translateZ(0);
+  overflow: visible; /* Allow glow to extend */
+}
+
+/* PERFORMANCE: Glow on ::before (animates opacity only, not box-shadow) */
+.scanner-card::before {
+  content: "";
+  position: absolute;
+  inset: -40%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(56, 189, 248, 0.35) 0%,
+    rgba(59, 130, 246, 0.25) 35%,
+    rgba(34, 211, 238, 0.15) 55%,
+    transparent 70%
+  );
+  /* PERFORMANCE: Balanced glow blur for visibility */
+  filter: blur(18px);
+  opacity: 0.45;
+  transform: translateZ(0);
+  will-change: opacity;
+  animation: glowPulse 12s ease-in-out infinite; /* Slower = less repaints */
+  z-index: 0;
+}
+
+/* Border shimmer - using wrapper div since ::before is now glow */
+.scanner-card-border-shimmer {
+  position: absolute;
+  inset: -2px;
+  border-radius: 1rem;
+  padding: 2px;
+  background: linear-gradient(
+    90deg,
+    rgba(56, 189, 248, 0.0),
+    rgba(120, 200, 255, 0.85),
+    rgba(59, 130, 246, 0.75),
+    rgba(34, 211, 238, 0.85),
+    rgba(56, 189, 248, 0.0)
+  );
+  background-size: 200% 100%;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: borderShimmer 8s linear infinite; /* Slower = less repaints */
+  pointer-events: none;
+  z-index: 1;
+  filter: blur(0.3px); /* Reduced blur */
+  will-change: background-position;
+  transform: translateZ(0);
+}
+
+/* Inner scanning reflection - kept on ::after (background-position animation is compositor-friendly) */
+.scanner-card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 1rem;
+  background: linear-gradient(
+    135deg,
+    transparent 0%,
+    rgba(120, 200, 255, 0.1) 30%,
+    transparent 50%,
+    rgba(56, 189, 248, 0.08) 70%,
+    transparent 100%
+  );
+  background-size: 200% 200%;
+  animation: innerScan 15s ease-in-out infinite; /* Slower = less repaints */
+  pointer-events: none;
+  opacity: 0.6;
+  will-change: background-position;
+  transform: translateZ(0);
+  z-index: 1;
+}
+
+/* ===== BUTTON STYLES ===== */
+
+.analyze-button {
+  position: relative;
+  /* Removed box-shadow animation - replaced with pseudo-element glow */
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%) !important;
+  border: 1px solid rgba(120, 200, 255, 0.5) !important;
+  will-change: transform;
+  transform: translateZ(0);
+  overflow: visible; /* Allow glow to extend */
+}
+
+/* PERFORMANCE: Glow using pseudo-element (animates opacity, not box-shadow) */
+.analyze-button::before {
+  content: "";
+  position: absolute;
+  inset: -50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 50% 50%,
+    rgba(59, 130, 246, 0.4),
+    rgba(56, 189, 248, 0.2),
+    transparent 60%
+  );
+  /* PERFORMANCE: Balanced button glow blur for visibility */
+  filter: blur(14px);
+  opacity: 0.6;
+  transform: translateZ(0);
+  will-change: opacity;
+  animation: buttonGlowPulse 6s ease-in-out infinite; /* Slower = less repaints */
+  z-index: -1;
+}
+
+.analyze-button:hover:not(:disabled) {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 
+    0 0 70px rgba(59, 130, 246, 0.95),
+    0 0 130px rgba(59, 130, 246, 0.7),
+    0 0 180px rgba(56, 189, 248, 0.6),
+    0 8px 30px rgba(0, 0, 0, 0.5) !important;
+}
+
+.analyze-button:active:not(:disabled) {
+  transform: translateY(-1px) scale(1.01);
+}
+
+/* ===== CAPABILITY INDICATORS ===== */
+
+.capability-indicator {
+  font-size: 10px;
+  opacity: 0.65;
+  letter-spacing: 0.8px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: rgba(120, 200, 255, 0.95);
+  text-shadow: 0 0 12px rgba(56, 189, 248, 0.6);
+  transition: all 0.3s ease;
+}
+
+.scanner-card:hover .capability-indicator {
+  opacity: 0.95;
+  text-shadow: 0 0 18px rgba(56, 189, 248, 0.85);
+}
+
+/* ===== LAYOUT ===== */
+
+#root {
+  position: relative;
+  z-index: 5;
+}
+
+/* ===== TEXTAREA ENHANCEMENT ===== */
+
+textarea {
+  background: rgba(0, 0, 0, 0.35) !important;
+}
+
+textarea:focus {
+  background: rgba(0, 0, 0, 0.45) !important;
+  box-shadow: 
+    inset 0 2px 16px rgba(56, 189, 248, 0.18),
+    0 0 20px rgba(56, 189, 248, 0.25),
+    0 0 40px rgba(56, 189, 248, 0.12) !important;
+  border-color: rgba(120, 200, 255, 0.6) !important;
+}
